@@ -49,3 +49,5 @@ next-env.d.ts
 
 # large media (uploaded separately)
 docs/evidence/video/*.mp4
+
+.vercel

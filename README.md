@@ -8,8 +8,8 @@ a real embedded Postgres, **estimates** how long production would be blocked, an
 custom Bob mode and skill shipped in this repo — to **rewrite** each dangerous migration into a zero-downtime
 expand → backfill → contract sequence, then **re-verifies** Bob's rewrite with the same gate.
 
-- Live demo: **LIVE_URL**
-- Demo video: **VIDEO_URL**
+- Live demo: **https://locksmith-ibm-bob.vercel.app**
+- Demo video: MP4 (2:27) attached to the lablab.ai submission · script in [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md)
 - IBM Bob task session screenshots: [`bob_sessions/`](bob_sessions/)
 
 ---

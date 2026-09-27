@@ -46,6 +46,6 @@ IBM Bob, IBM Bob IDE, TypeScript, Next.js, PostgreSQL, PGlite, Tailwind CSS, Ver
 Developer tools · Release & deployment workflow · DevOps
 
 ## Links
-- Repository: REPO_URL
-- Live app: LIVE_URL
+- Repository: https://github.com/kmt9967/locksmith-ibm-bob
+- Live app: https://locksmith-ibm-bob.vercel.app
 - Video: VIDEO (MP4 upload)
