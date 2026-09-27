@@ -46,3 +46,6 @@ next-env.d.ts
 !.env.example
 .playwright-mcp/
 *.log
+
+# large media (uploaded separately)
+docs/evidence/video/*.mp4

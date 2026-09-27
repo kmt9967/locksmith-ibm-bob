@@ -1,0 +1,119 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>LockSmith — IBM Bob 2.0 Hackathon</title>
+<style>
+  @page { size: 1280px 720px; margin: 0; }
+  :root { --bg:#0b0d10; --s:#11151a; --s2:#161b22; --b:#232a33; --t:#e6e9ee; --m:#8b95a3; --a:#5cc8ff; --c:#f0566a; --h:#f59e3b; --ok:#3dd68c; }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--bg); color: var(--t); font-family: "Segoe UI", system-ui, sans-serif; }
+  .slide { width: 1280px; height: 720px; padding: 64px 72px; position: relative; overflow: hidden; page-break-after: always;
+    background-image: linear-gradient(to right, rgba(255,255,255,.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,.03) 1px, transparent 1px);
+    background-size: 40px 40px; }
+  .kicker { font-size: 15px; letter-spacing: .18em; text-transform: uppercase; color: var(--m); }
+  h1 { font-size: 64px; line-height: 1.05; letter-spacing: -.02em; font-weight: 700; }
+  h2 { font-size: 40px; letter-spacing: -.01em; font-weight: 700; margin-top: 8px; }
+  p, li { font-size: 22px; line-height: 1.45; color: var(--m); }
+  .accent { color: var(--a); } .crit { color: var(--c); } .ok { color: var(--ok); } .high { color: var(--h); }
+  code, .mono { font-family: Consolas, "Cascadia Mono", monospace; }
+  .card { background: var(--s); border: 1px solid var(--b); border-radius: 12px; padding: 22px 24px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-top: 36px; }
+  .foot { position: absolute; bottom: 28px; left: 72px; right: 72px; display: flex; justify-content: space-between; font-size: 14px; color: var(--m); }
+  table { border-collapse: collapse; width: 100%; margin-top: 28px; }
+  td, th { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--b); font-size: 19px; }
+  th { color: var(--m); font-weight: 500; font-size: 15px; text-transform: uppercase; letter-spacing: .08em; }
+  .lock { display: flex; align-items: center; gap: 14px; }
+  .big { font-size: 88px; font-weight: 700; line-height: 1; }
+  img.shot { border: 1px solid var(--b); border-radius: 10px; display: block; }
+</style></head><body>
+
+<section class="slide" style="display:flex;flex-direction:column;justify-content:center">
+  <div class="lock">
+    <svg width="64" height="64" viewBox="0 0 32 32"><path d="M11 14v-3a5 5 0 0 1 10 0v3" fill="none" stroke="#5cc8ff" stroke-width="2.4" stroke-linecap="round"/><rect x="8" y="14" width="16" height="12" rx="3" fill="#5cc8ff"/><circle cx="16" cy="20" r="2" fill="#0b0d10"/></svg>
+    <span style="font-size:40px;font-weight:700">LockSmith</span>
+  </div>
+  <h1 style="margin-top:28px;max-width:1000px">Catch the migration that locks production — <span class="accent">before you ship it.</span></h1>
+  <p style="margin-top:24px;max-width:900px">A PostgreSQL migration gate that measures real locks and uses a custom <b style="color:var(--t)">IBM Bob</b> mode with parallel subagents to rewrite dangerous migrations into verified zero-downtime rollouts.</p>
+  <div class="foot"><span>IBM Bob 2.0 Hackathon · lablab.ai</span><span>Team Teqprotech</span></div>
+</section>
+
+<section class="slide">
+  <div class="kicker">The problem · release &amp; deployment workflow</div>
+  <h2>Migration risk is invisible in a diff</h2>
+  <table>
+    <tr><th>Innocent-looking line</th><th>What PostgreSQL does</th></tr>
+    <tr><td class="mono">CREATE INDEX … ON orders (customer_id)</td><td><span class="high">ShareLock</span> for the whole build → all writes blocked</td></tr>
+    <tr><td class="mono">ALTER COLUMN total TYPE numeric(12,2)</td><td><span class="crit">AccessExclusiveLock</span> + full table rewrite</td></tr>
+    <tr><td class="mono">ADD COLUMN … NOT NULL DEFAULT now()</td><td>volatile default → full table rewrite</td></tr>
+    <tr><td class="mono">RENAME COLUMN email TO email_address</td><td>instant — but every running app instance breaks</td></tr>
+    <tr><td class="mono">…no SET lock_timeout</td><td>queues behind one slow query, then blocks everything</td></tr>
+  </table>
+  <p style="margin-top:24px">Reviewers need lock semantics by heart. Misses cause outages; the safe rewrite costs a senior engineer hours.</p>
+</section>
+
+<section class="slide">
+  <div class="kicker">The solution</div>
+  <h2>Detect → Prove → Impact → <span class="accent">Rewrite with Bob</span> → Re-verify</h2>
+  <div class="grid5">
+    <div class="card"><div class="accent mono">01</div><b style="font-size:22px">Detect</b><p style="font-size:17px;margin-top:8px">12 deterministic rules, incl. renames still referenced by app code</p></div>
+    <div class="card"><div class="accent mono">02</div><b style="font-size:22px">Prove</b><p style="font-size:17px;margin-top:8px">Replay in embedded Postgres (PGlite); read <code>pg_locks</code>, detect rewrites via <code>relfilenode</code></p></div>
+    <div class="card"><div class="accent mono">03</div><b style="font-size:22px">Impact</b><p style="font-size:17px;margin-top:8px">Table sizes → seconds of lock, writes blocked</p></div>
+    <div class="card" style="border-color:#5cc8ff66"><div class="accent mono">04</div><b style="font-size:22px">Rewrite · IBM Bob</b><p style="font-size:17px;margin-top:8px">Custom mode + skill; 1 subagent per migration, in parallel</p></div>
+    <div class="card"><div class="accent mono">05</div><b style="font-size:22px">Gate</b><p style="font-size:17px;margin-top:8px">Same engine re-checks Bob's output; CLI blocks CI</p></div>
+  </div>
+  <p style="margin-top:36px"><b style="color:var(--t)">The AI is verified, not trusted:</b> a deterministic engine with measured locks judges; Bob does the judgement-heavy surgery.</p>
+</section>
+
+<section class="slide">
+  <div class="kicker">Evidence, not guesses</div>
+  <h2>Every finding carries the lock Postgres actually took</h2>
+  <img class="shot" src="before-crop.png" style="width:1136px;margin-top:22px;height:470px;object-fit:cover;object-position:top">
+</section>
+
+<section class="slide">
+  <div class="kicker">IBM Bob as the core component</div>
+  <h2>Migration Surgeon: a Bob mode that ships in the repo</h2>
+  <div class="grid2" style="margin-top:22px;grid-template-columns:1.25fr 1fr;align-items:start">
+    <div style="display:flex;gap:14px"><img class="shot" src="bobpanel.png" style="height:430px"><img class="shot" src="t05.png" style="height:430px;width:420px;object-fit:cover;object-position:right top"></div>
+    <div>
+      <ul style="padding-left:22px">
+        <li><code>.bob/custom_modes.yaml</code> — role, fileRegex-restricted edits</li>
+        <li><code>.bob/rules-migration-surgeon/</code> — lock reference Bob reads</li>
+        <li><code>.bob/skills/lock-audit</code> — run gate → <b style="color:var(--t)">6 parallel subagents</b> → merge → re-run gate</li>
+        <li>Bob withdrew its own column-drop when it saw the app still used the column</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <div class="kicker">Result on the demo repository (fictional, 42M-row orders table)</div>
+  <h2>Gate FAIL → PASS after Bob's rewrite</h2>
+  <div class="grid2" style="margin-top:34px">
+    <div class="card"><div class="kicker">As written</div><div class="big crit" style="margin-top:12px">100</div><p>risk · <b class="crit">FAIL</b> · 14 findings (4 critical) · longest lock ≈ 4.7 min</p></div>
+    <div class="card" style="border-color:#3dd68c66"><div class="kicker">After IBM Bob</div><div class="big ok" style="margin-top:12px">0</div><p>risk · <b class="ok">PASS</b> · 0 findings · 6 migrations → 13 ordered safe files + dual-write app code</p></div>
+  </div>
+  <p style="margin-top:28px">Verified by the same engine and lock probe. 61 automated tests. Try any migration at <span class="accent">/analyze</span>.</p>
+</section>
+
+<section class="slide">
+  <div class="kicker">How we used IBM Bob to build it</div>
+  <h2>6 Bob IDE tasks · 13.07 of 40 Bobcoins</h2>
+  <table style="margin-top:18px">
+    <tr><th>#</th><th>Task</th><th>Bob features</th></tr>
+    <tr><td>1</td><td>Architecture + contracts from the spec</td><td>Agent mode · document understanding</td></tr>
+    <tr><td>2</td><td>Rule engine LS001–LS012 + 53 tests</td><td>Agent mode · todo list · test loop</td></tr>
+    <tr><td>3</td><td>PGlite lock probe + fix of a reviewed defect</td><td>parallel commands · debugging</td></tr>
+    <tr><td>4</td><td>Migration Surgeon mode, rules, skill</td><td>custom mode · skill</td></tr>
+    <tr><td>5</td><td>Rewrite the release</td><td>custom mode · 6 parallel subagents</td></tr>
+    <tr><td>6</td><td>Engine false positive + API security review</td><td>debugging · review</td></tr>
+  </table>
+  <p style="margin-top:16px;font-size:18px">Every task: summary screenshot in <code>bob_sessions/</code>, independent re-run of tests, accept/reject logged.</p>
+</section>
+
+<section class="slide" style="display:flex;flex-direction:column;justify-content:center">
+  <div class="kicker">Business value &amp; next steps</div>
+  <h2 style="max-width:1000px">Turn "does this lock orders? for how long?" into a CI check — and hours of rewriting into a verified Bob task.</h2>
+  <p style="margin-top:28px">Next: GitHub Action · Prisma / Rails / Flyway adapters · real table sizes from <code>pg_stat_user_tables</code> · MySQL online-DDL rules · watsonx.ai rollout runbooks.</p>
+  <div class="foot"><span>LockSmith · MIT licensed · demo data is fictional</span><span>IBM Bob 2.0 Hackathon · Team Teqprotech</span></div>
+</section>
+</body></html>
