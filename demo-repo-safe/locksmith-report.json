@@ -1,0 +1,411 @@
+{
+  "migrations": [
+    {
+      "name": "001_baseline.sql",
+      "filePath": "F:\\Hackathon\\ibm-bob-2-hackathon\\demo-repo-safe\\db\\migrations\\001_baseline.sql",
+      "findings": [],
+      "riskScore": 0
+    },
+    {
+      "name": "002_orders_customer_index.sql",
+      "filePath": "F:\\Hackathon\\ibm-bob-2-hackathon\\demo-repo-safe\\db\\migrations\\002_orders_customer_index.sql",
+      "findings": [
+        {
+          "ruleId": "LS001",
+          "severity": "critical",
+          "migration": "002_orders_customer_index.sql",
+          "statementIndex": 0,
+          "line": 2,
+          "table": "orders",
+          "message": "CREATE INDEX without CONCURRENTLY on table \"orders\"",
+          "why": "Acquires a ShareLock for the entire duration of the index build, blocking writes. On large tables this can take minutes.",
+          "safePattern": "Use CREATE INDEX CONCURRENTLY in its own non-transactional migration.",
+          "evidence": {
+            "locks": {
+              "orders": "ShareLock",
+              "idx_orders_customer_id": "AccessExclusiveLock"
+            },
+            "rewrite": false,
+            "error": null
+          },
+          "impact": {
+            "blocking": true,
+            "durationClass": "scan",
+            "estSeconds": 28,
+            "blockedWrites": 9800
+          }
+        },
+        {
+          "ruleId": "LS010",
+          "severity": "medium",
+          "migration": "002_orders_customer_index.sql",
+          "statementIndex": 0,
+          "line": 2,
+          "table": "orders",
+          "message": "Migration acquires a heavy lock but has no SET lock_timeout",
+          "why": "Without lock_timeout, a long-running query ahead of your DDL will block it, and then every subsequent query queues behind it (lock queue pile-up), causing an outage.",
+          "safePattern": "Add `SET lock_timeout = '3s';` at the top of the migration and implement application-level retry logic.",
+          "evidence": {
+            "locks": {
+              "orders": "ShareLock",
+              "idx_orders_customer_id": "AccessExclusiveLock"
+            },
+            "rewrite": false,
+            "error": null
+          },
+          "impact": {
+            "blocking": true,
+            "durationClass": "scan",
+            "estSeconds": 28,
+            "blockedWrites": 9800
+          }
+        }
+      ],
+      "riskScore": 100
+    },
+    {
+      "name": "003_orders_shipped_at.sql",
+      "filePath": "F:\\Hackathon\\ibm-bob-2-hackathon\\demo-repo-safe\\db\\migrations\\003_orders_shipped_at.sql",
+      "findings": [
+        {
+          "ruleId": "LS003",
+          "severity": "high",
+          "migration": "003_orders_shipped_at.sql",
+          "statementIndex": 0,
+          "line": 2,
+          "table": "orders",
+          "message": "ADD COLUMN \"shipped_at\" with volatile DEFAULT on table \"orders\"",
+          "why": "A volatile DEFAULT (e.g. now(), gen_random_uuid()) forces PostgreSQL to rewrite the entire table to materialise the per-row default value, holding ACCESS EXCLUSIVE for the duration.",
+          "safePattern": "Add the column without a DEFAULT, then SET DEFAULT, then batch-backfill existing rows outside the migration.",
+          "evidence": {
+            "locks": {
+              "orders": "AccessExclusiveLock"
+            },
+            "rewrite": false,
+            "error": null
+          },
+          "impact": {
+            "blocking": true,
+            "durationClass": "rewrite",
+            "estSeconds": 280,
+            "blockedWrites": 98000
+          }
+        },
+        {
+          "ruleId": "LS010",
+          "severity": "medium",
+          "migration": "003_orders_shipped_at.sql",
+          "statementIndex": 0,
+          "line": 2,
+          "table": "orders",
+          "message": "Migration acquires a heavy lock but has no SET lock_timeout",
+          "why": "Without lock_timeout, a long-running query ahead of your DDL will block it, and then every subsequent query queues behind it (lock queue pile-up), causing an outage.",
+          "safePattern": "Add `SET lock_timeout = '3s';` at the top of the migration and implement application-level retry logic.",
+          "evidence": {
+            "locks": {
+              "orders": "AccessExclusiveLock"
+            },
+            "rewrite": false,
+            "error": null
+          },
+          "impact": {
+            "blocking": true,
+            "durationClass": "rewrite",
+            "estSeconds": 280,
+            "blockedWrites": 98000
+          }
+        },
+        {
+          "ruleId": "LS002",
+          "severity": "critical",
+          "migration": "003_orders_shipped_at.sql",
+          "statementIndex": 1,
+          "line": 3,
+          "table": "orders",
+          "message": "ADD COLUMN \"tracking_code\" NOT NULL without any DEFAULT on table \"orders\"",
+          "why": "PostgreSQL must verify every existing row satisfies NOT NULL. Without a DEFAULT, the statement fails immediately on any non-empty table.",
+          "safePattern": "Add the column as nullable first, backfill in batches, then add NOT NULL via ADD CONSTRAINT … CHECK NOT VALID + VALIDATE CONSTRAINT.",
+          "evidence": {
+            "locks": {},
+            "rewrite": false,
+            "error": "column \"tracking_code\" of relation \"orders\" contains null values"
+          },
+          "impact": {
+            "blocking": false,
+            "durationClass": "instant",
+            "estSeconds": 0,
+            "blockedWrites": 0
+          }
+        }
+      ],
+      "riskScore": 100
+    },
+    {
+      "name": "004_rename_customer_email.sql",
+      "filePath": "F:\\Hackathon\\ibm-bob-2-hackathon\\demo-repo-safe\\db\\migrations\\004_rename_customer_email.sql",
+      "findings": [
+        {
+          "ruleId": "LS008",
+          "severity": "critical",
+          "migration": "004_rename_customer_email.sql",
+          "statementIndex": 0,
+          "line": 2,
+          "table": "customers",
+          "message": "RENAME column \"email\" while application code still references it (3 reference(s))",
+          "why": "Application code references \"email\" in demo-repo-safe\\src\\customers.ts:5, demo-repo-safe\\src\\customers.ts:5, demo-repo-safe\\src\\customers.ts:13. After renaming, these queries will fail.",
+          "safePattern": "Expand/contract: add a new column/alias, update all code to use the new name, deploy, then drop the old column in a later migration.",
+          "evidence": {
+            "locks": {
+              "customers": "AccessExclusiveLock"
+            },
+            "rewrite": false,
+            "error": null
+          },
+          "impact": {
+            "blocking": true,
+            "durationClass": "instant",
+            "estSeconds": 0,
+            "blockedWrites": 0
+          }
+        },
+        {
+          "ruleId": "LS010",
+          "severity": "medium",
+          "migration": "004_rename_customer_email.sql",
+          "statementIndex": 0,
+          "line": 2,
+          "table": "customers",
+          "message": "Migration acquires a heavy lock but has no SET lock_timeout",
+          "why": "Without lock_timeout, a long-running query ahead of your DDL will block it, and then every subsequent query queues behind it (lock queue pile-up), causing an outage.",
+          "safePattern": "Add `SET lock_timeout = '3s';` at the top of the migration and implement application-level retry logic.",
+          "evidence": {
+            "locks": {
+              "customers": "AccessExclusiveLock"
+            },
+            "rewrite": false,
+            "error": null
+          },
+          "impact": {
+            "blocking": true,
+            "durationClass": "instant",
+            "estSeconds": 0,
+            "blockedWrites": 0
+          }
+        }
+      ],
+      "riskScore": 100
+    },
+    {
+      "name": "005_orders_total_precision.sql",
+      "filePath": "F:\\Hackathon\\ibm-bob-2-hackathon\\demo-repo-safe\\db\\migrations\\005_orders_total_precision.sql",
+      "findings": [
+        {
+          "ruleId": "LS004",
+          "severity": "critical",
+          "migration": "005_orders_total_precision.sql",
+          "statementIndex": 0,
+          "line": 2,
+          "table": "orders",
+          "message": "ALTER COLUMN \"total\" TYPE on table \"orders\"",
+          "why": "A column type change forces a full table rewrite under ACCESS EXCLUSIVE lock, blocking all reads and writes for the duration.",
+          "safePattern": "Add a new column with the target type, dual-write to both columns, backfill, then swap in a separate migration.",
+          "evidence": {
+            "locks": {
+              "orders": "AccessExclusiveLock",
+              "orders_pkey": "AccessExclusiveLock",
+              "idx_orders_customer_id": "AccessExclusiveLock"
+            },
+            "rewrite": true,
+            "error": null
+          },
+          "impact": {
+            "blocking": true,
+            "durationClass": "rewrite",
+            "estSeconds": 280,
+            "blockedWrites": 98000
+          }
+        },
+        {
+          "ruleId": "LS010",
+          "severity": "medium",
+          "migration": "005_orders_total_precision.sql",
+          "statementIndex": 0,
+          "line": 2,
+          "table": "orders",
+          "message": "Migration acquires a heavy lock but has no SET lock_timeout",
+          "why": "Without lock_timeout, a long-running query ahead of your DDL will block it, and then every subsequent query queues behind it (lock queue pile-up), causing an outage.",
+          "safePattern": "Add `SET lock_timeout = '3s';` at the top of the migration and implement application-level retry logic.",
+          "evidence": {
+            "locks": {
+              "orders": "AccessExclusiveLock",
+              "orders_pkey": "AccessExclusiveLock",
+              "idx_orders_customer_id": "AccessExclusiveLock"
+            },
+            "rewrite": true,
+            "error": null
+          },
+          "impact": {
+            "blocking": true,
+            "durationClass": "rewrite",
+            "estSeconds": 280,
+            "blockedWrites": 98000
+          }
+        }
+      ],
+      "riskScore": 100
+    },
+    {
+      "name": "006_order_items_fk.sql",
+      "filePath": "F:\\Hackathon\\ibm-bob-2-hackathon\\demo-repo-safe\\db\\migrations\\006_order_items_fk.sql",
+      "findings": [
+        {
+          "ruleId": "LS006",
+          "severity": "high",
+          "migration": "006_order_items_fk.sql",
+          "statementIndex": 0,
+          "line": 2,
+          "table": "order_items",
+          "message": "ADD CONSTRAINT FOREIGN KEY without NOT VALID on table \"order_items\"",
+          "why": "Validating all existing rows under ShareRowExclusiveLock blocks writes to both the referencing and referenced tables for the duration of a full scan.",
+          "safePattern": "Use NOT VALID to skip existing row validation, then VALIDATE CONSTRAINT in a separate migration.",
+          "evidence": {
+            "locks": {
+              "orders_pkey": "AccessShareLock",
+              "order_items_pkey": "AccessShareLock",
+              "order_items": "ShareRowExclusiveLock",
+              "idx_orders_customer_id": "AccessShareLock",
+              "orders": "ShareRowExclusiveLock"
+            },
+            "rewrite": false,
+            "error": null
+          },
+          "impact": {
+            "blocking": true,
+            "durationClass": "scan",
+            "estSeconds": 78.66666666666667,
+            "blockedWrites": 70800
+          }
+        },
+        {
+          "ruleId": "LS010",
+          "severity": "medium",
+          "migration": "006_order_items_fk.sql",
+          "statementIndex": 0,
+          "line": 2,
+          "table": "order_items",
+          "message": "Migration acquires a heavy lock but has no SET lock_timeout",
+          "why": "Without lock_timeout, a long-running query ahead of your DDL will block it, and then every subsequent query queues behind it (lock queue pile-up), causing an outage.",
+          "safePattern": "Add `SET lock_timeout = '3s';` at the top of the migration and implement application-level retry logic.",
+          "evidence": {
+            "locks": {
+              "orders_pkey": "AccessShareLock",
+              "order_items_pkey": "AccessShareLock",
+              "order_items": "ShareRowExclusiveLock",
+              "idx_orders_customer_id": "AccessShareLock",
+              "orders": "ShareRowExclusiveLock"
+            },
+            "rewrite": false,
+            "error": null
+          },
+          "impact": {
+            "blocking": true,
+            "durationClass": "scan",
+            "estSeconds": 78.66666666666667,
+            "blockedWrites": 70800
+          }
+        }
+      ],
+      "riskScore": 55
+    },
+    {
+      "name": "007_backfill_status.sql",
+      "filePath": "F:\\Hackathon\\ibm-bob-2-hackathon\\demo-repo-safe\\db\\migrations\\007_backfill_status.sql",
+      "findings": [
+        {
+          "ruleId": "LS012",
+          "severity": "high",
+          "migration": "007_backfill_status.sql",
+          "statementIndex": 0,
+          "line": 2,
+          "table": "orders",
+          "message": "Un-batched UPDATE on table \"orders\" without a key-range predicate",
+          "why": "A single-transaction UPDATE/DELETE over millions of rows holds RowExclusiveLock for the entire scan duration, accumulating a huge undo log and blocking concurrent writes.",
+          "safePattern": "Use a batched backfill job: `WHERE id BETWEEN :start AND :end`, processing chunks outside the schema migration.",
+          "evidence": {
+            "locks": {
+              "orders_pkey": "RowExclusiveLock",
+              "idx_orders_customer_id": "RowExclusiveLock",
+              "orders": "RowExclusiveLock"
+            },
+            "rewrite": false,
+            "error": null
+          },
+          "impact": {
+            "blocking": false,
+            "durationClass": "scan",
+            "estSeconds": 28,
+            "blockedWrites": 0
+          }
+        },
+        {
+          "ruleId": "LS005",
+          "severity": "high",
+          "migration": "007_backfill_status.sql",
+          "statementIndex": 1,
+          "line": 3,
+          "table": "orders",
+          "message": "ALTER COLUMN \"status\" SET NOT NULL on table \"orders\"",
+          "why": "PostgreSQL performs a full table scan under ACCESS EXCLUSIVE lock to verify no NULLs remain, blocking all reads and writes.",
+          "safePattern": "Use: ADD CONSTRAINT … CHECK (col IS NOT NULL) NOT VALID; VALIDATE CONSTRAINT; then SET NOT NULL; DROP CONSTRAINT.",
+          "evidence": {
+            "locks": {
+              "orders": "AccessExclusiveLock"
+            },
+            "rewrite": false,
+            "error": null
+          },
+          "impact": {
+            "blocking": true,
+            "durationClass": "scan",
+            "estSeconds": 28,
+            "blockedWrites": 9800
+          }
+        },
+        {
+          "ruleId": "LS010",
+          "severity": "medium",
+          "migration": "007_backfill_status.sql",
+          "statementIndex": 1,
+          "line": 3,
+          "table": "orders",
+          "message": "Migration acquires a heavy lock but has no SET lock_timeout",
+          "why": "Without lock_timeout, a long-running query ahead of your DDL will block it, and then every subsequent query queues behind it (lock queue pile-up), causing an outage.",
+          "safePattern": "Add `SET lock_timeout = '3s';` at the top of the migration and implement application-level retry logic.",
+          "evidence": {
+            "locks": {
+              "orders": "AccessExclusiveLock"
+            },
+            "rewrite": false,
+            "error": null
+          },
+          "impact": {
+            "blocking": true,
+            "durationClass": "scan",
+            "estSeconds": 28,
+            "blockedWrites": 9800
+          }
+        }
+      ],
+      "riskScore": 95
+    },
+    {
+      "name": "008_products_title_search.sql",
+      "filePath": "F:\\Hackathon\\ibm-bob-2-hackathon\\demo-repo-safe\\db\\migrations\\008_products_title_search.sql",
+      "findings": [],
+      "riskScore": 0
+    }
+  ],
+  "riskScore": 100,
+  "gate": "fail",
+  "generatedAt": "2026-09-27T04:40:29.085Z"
+}

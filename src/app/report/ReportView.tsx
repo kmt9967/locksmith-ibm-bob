@@ -157,7 +157,10 @@ function FindingView({ f }: { f: Finding }) {
             {Object.entries(f.evidence.locks).map(([rel, mode]) => (
               <LockChip key={rel} relation={rel} mode={mode} />
             ))}
-            {f.evidence.rewrite && (
+            {(f.evidence as { inferred?: boolean }).inferred && (
+                      <span className="rounded border border-border px-2 py-0.5 font-mono text-[11px] text-muted">inferred (CONCURRENTLY runs outside a transaction)</span>
+                    )}
+                    {f.evidence.rewrite && (
               <span className="rounded border border-critical/40 px-2 py-0.5 font-mono text-[11px] text-critical">table rewritten (relfilenode changed)</span>
             )}
             {f.evidence.error && (

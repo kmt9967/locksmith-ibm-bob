@@ -1,0 +1,122 @@
+{
+  "migrations": [
+    {
+      "name": "001_baseline.sql",
+      "filePath": "F:\\Hackathon\\ibm-bob-2-hackathon\\demo-repo-safe\\db\\migrations\\001_baseline.sql",
+      "findings": [],
+      "riskScore": 0
+    },
+    {
+      "name": "002a_orders_customer_index_conc.sql",
+      "filePath": "F:\\Hackathon\\ibm-bob-2-hackathon\\demo-repo-safe\\db\\migrations\\002a_orders_customer_index_conc.sql",
+      "findings": [],
+      "riskScore": 0
+    },
+    {
+      "name": "003a_orders_shipped_at_expand.sql",
+      "filePath": "F:\\Hackathon\\ibm-bob-2-hackathon\\demo-repo-safe\\db\\migrations\\003a_orders_shipped_at_expand.sql",
+      "findings": [],
+      "riskScore": 0
+    },
+    {
+      "name": "003b_orders_shipped_at_backfill.sql",
+      "filePath": "F:\\Hackathon\\ibm-bob-2-hackathon\\demo-repo-safe\\db\\migrations\\003b_orders_shipped_at_backfill.sql",
+      "findings": [],
+      "riskScore": 0
+    },
+    {
+      "name": "003c_orders_shipped_at_contract.sql",
+      "filePath": "F:\\Hackathon\\ibm-bob-2-hackathon\\demo-repo-safe\\db\\migrations\\003c_orders_shipped_at_contract.sql",
+      "findings": [],
+      "riskScore": 0
+    },
+    {
+      "name": "003d_orders_shipped_at_validate.sql",
+      "filePath": "F:\\Hackathon\\ibm-bob-2-hackathon\\demo-repo-safe\\db\\migrations\\003d_orders_shipped_at_validate.sql",
+      "findings": [],
+      "riskScore": 0
+    },
+    {
+      "name": "004a_rename_customer_email_expand.sql",
+      "filePath": "F:\\Hackathon\\ibm-bob-2-hackathon\\demo-repo-safe\\db\\migrations\\004a_rename_customer_email_expand.sql",
+      "findings": [],
+      "riskScore": 0
+    },
+    {
+      "name": "005a_orders_total_precision_expand.sql",
+      "filePath": "F:\\Hackathon\\ibm-bob-2-hackathon\\demo-repo-safe\\db\\migrations\\005a_orders_total_precision_expand.sql",
+      "findings": [],
+      "riskScore": 0
+    },
+    {
+      "name": "005b_orders_total_precision_backfill.sql",
+      "filePath": "F:\\Hackathon\\ibm-bob-2-hackathon\\demo-repo-safe\\db\\migrations\\005b_orders_total_precision_backfill.sql",
+      "findings": [],
+      "riskScore": 0
+    },
+    {
+      "name": "006a_order_items_fk_expand.sql",
+      "filePath": "F:\\Hackathon\\ibm-bob-2-hackathon\\demo-repo-safe\\db\\migrations\\006a_order_items_fk_expand.sql",
+      "findings": [],
+      "riskScore": 0
+    },
+    {
+      "name": "006b_order_items_fk_validate.sql",
+      "filePath": "F:\\Hackathon\\ibm-bob-2-hackathon\\demo-repo-safe\\db\\migrations\\006b_order_items_fk_validate.sql",
+      "findings": [],
+      "riskScore": 0
+    },
+    {
+      "name": "007a_backfill_status_backfill.sql",
+      "filePath": "F:\\Hackathon\\ibm-bob-2-hackathon\\demo-repo-safe\\db\\migrations\\007a_backfill_status_backfill.sql",
+      "findings": [],
+      "riskScore": 0
+    },
+    {
+      "name": "007b_backfill_status_contract.sql",
+      "filePath": "F:\\Hackathon\\ibm-bob-2-hackathon\\demo-repo-safe\\db\\migrations\\007b_backfill_status_contract.sql",
+      "findings": [],
+      "riskScore": 0
+    },
+    {
+      "name": "007c_backfill_status_validate.sql",
+      "filePath": "F:\\Hackathon\\ibm-bob-2-hackathon\\demo-repo-safe\\db\\migrations\\007c_backfill_status_validate.sql",
+      "findings": [
+        {
+          "ruleId": "LS005",
+          "severity": "high",
+          "migration": "007c_backfill_status_validate.sql",
+          "statementIndex": 2,
+          "line": 5,
+          "table": "orders",
+          "message": "ALTER COLUMN \"status\" SET NOT NULL on table \"orders\"",
+          "why": "PostgreSQL performs a full table scan under ACCESS EXCLUSIVE lock to verify no NULLs remain, blocking all reads and writes.",
+          "safePattern": "Use: ADD CONSTRAINT … CHECK (col IS NOT NULL) NOT VALID; VALIDATE CONSTRAINT; then SET NOT NULL; DROP CONSTRAINT.",
+          "evidence": {
+            "locks": {
+              "orders": "AccessExclusiveLock"
+            },
+            "rewrite": false,
+            "error": null
+          },
+          "impact": {
+            "blocking": true,
+            "durationClass": "scan",
+            "estSeconds": 28,
+            "blockedWrites": 9800
+          }
+        }
+      ],
+      "riskScore": 40
+    },
+    {
+      "name": "008_products_title_search.sql",
+      "filePath": "F:\\Hackathon\\ibm-bob-2-hackathon\\demo-repo-safe\\db\\migrations\\008_products_title_search.sql",
+      "findings": [],
+      "riskScore": 0
+    }
+  ],
+  "riskScore": 40,
+  "gate": "pass",
+  "generatedAt": "2026-09-27T04:46:55.591Z"
+}
