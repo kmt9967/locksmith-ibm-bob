@@ -1,6 +1,6 @@
 # 🔒 LockSmith — catch the migration that locks production, before you ship it
 
-**IBM Bob 2.0 Hackathon (lablab.ai) · Team Teqprotech · MIT licensed**
+**IBM Bob 2.0 Hackathon (lablab.ai) · Team Teqprotech — solo entry by Talal Khawaja · MIT licensed**
 
 LockSmith is a deploy gate for PostgreSQL schema migrations. It **detects** statements that would block
 reads or writes on large tables, **proves** the lock each statement takes by replaying the migration inside

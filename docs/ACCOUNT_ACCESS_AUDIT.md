@@ -6,7 +6,7 @@ No secrets, codes, tokens or invite links are recorded here.
 | Platform | Status | Evidence / notes |
 |---|---|---|
 | lablab.ai | **Registered + enrolled, signed in** | Event page shows "Team Dashboard" + "Submit Project" for this account |
-| lablab team | **Teqprotech** (leader: Talal Khawaja / kmt9967) | Members: Aqeela Urooj, Shadab Akhund, Umer Anis. No submission yet. |
+| lablab team | **Teqprotech** (leader: Talal Khawaja / kmt9967) | At audit time also listed Aqeela Urooj, Shadab Akhund, Umer Anis; they did not take part and were removed by the team lead on 2026-09-27 ~11:00 PKT. Final team: Talal Khawaja only. |
 | lablab submission form | **Accessible** | 3-step form; step 1 = title (5–50 chars), short desc (50–255), long desc (500–4000 chars), IBM Bob usage statement (500–4000 chars), categories, technologies |
 | IBM Bob 2.0 | **Access granted** | Email "You've been invited to join your team" from IBM SaaS, 2026-09-25 19:22 PKT: added to enterprise account `ibm-hackathon-lablab`, plan: Enterprise |
 | Bob account to select | `ibm-coding-challenge-uat` (region us-east) | Per official guide — select in Bob IDE Settings → General if multiple accounts |
@@ -27,4 +27,4 @@ No secrets, codes, tokens or invite links are recorded here.
 
 ## Blockers requiring the user
 1. IBMid sign-in inside Bob IDE (browser auth).
-2. Bob IDE task-summary screenshots must come from Bob IDE's Tasks view — for **each team member** who used Bob.
+2. Bob IDE task-summary screenshots must come from Bob IDE's Tasks view — for **each team member** (final team: Talal only).

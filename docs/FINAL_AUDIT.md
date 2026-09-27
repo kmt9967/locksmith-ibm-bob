@@ -4,7 +4,7 @@ Audited 2026-09-27 ~10:45 PKT. Deadline: **2026-09-27 20:00 PKT (11:00 AM ET)**.
 
 ## Hackathon
 - [x] Correct challenge — IBM Bob 2.0 Hackathon, single track (improve a developer workflow → release/deployment of DB migrations)
-- [x] Team — Teqprotech (Talal Khawaja lead, Aqeela Urooj, Shadab Akhund, Umer Anis)
+- [x] Team — Teqprotech, **solo**: Talal Khawaja (kmt9967). Three inactive members were removed by the team lead via lablab's "Kick member" on 2026-09-27; team page verified to list only Talal.
 - [x] Deadline verified on live page
 - [x] Registered/enrolled; submission form reachable
 
@@ -20,7 +20,7 @@ Audited 2026-09-27 ~10:45 PKT. Deadline: **2026-09-27 20:00 PKT (11:00 AM ET)**.
 - [x] Bob IDE is a core component (custom mode + rules + skill ship in `.bob/`; used in the product flow)
 - [x] 6 genuine tasks, 13.07 / 40 Bobcoins; summaries in `bob_sessions/` (6 PNGs, Talal)
 - [x] Claims in README / submission are backed by `docs/BOB_USAGE_LOG.md`
-- [ ] **Teammate sessions (Aqeela, Shadab, Umer) — pending, see SUBMISSION_CHECKLIST.md**
+- [x] "Screenshots from each team member": the only team member is Talal; his 6 sessions are in `bob_sessions/`
 
 ## GitHub
 - [x] https://github.com/kmt9967/locksmith-ibm-bob — public, MIT detected, default branch `main`
