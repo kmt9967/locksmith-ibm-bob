@@ -41,6 +41,6 @@ Audited 2026-09-27 ~10:45 PKT. Deadline: **2026-09-27 20:00 PKT (11:00 AM ET)**.
 
 ## Submission (lablab draft)
 - [x] Step 1: title, short/long description, Bob usage statement, category (Developer Tools), technology (Ibm)
-- [ ] Step 2: video + slides + cover — in progress
-- [ ] Step 3: repository / app URL / Bob evidence — pending
+- [x] Step 2: video (MP4 2:27) + slides (PDF) + cover image uploaded
+- [x] Step 3: repo URL, platform Vercel, demo URL, additional info (Bob evidence pointers); draft saved at 100 %
 - [ ] Final **Submit** — reserved for the team lead
