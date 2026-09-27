@@ -1,0 +1,6 @@
+{
+  "customers":   { "rows": 3200000,  "writesPerSec": 40 },
+  "orders":      { "rows": 42000000, "writesPerSec": 350 },
+  "order_items": { "rows": 118000000, "writesPerSec": 900 },
+  "products":    { "rows": 56000,    "writesPerSec": 2 }
+}
