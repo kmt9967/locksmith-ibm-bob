@@ -210,17 +210,13 @@ export async function analyzeRepo(
   const migrationReports: MigrationReport[] = [];
 
   // ── PROBE HOOK ─────────────────────────────────────────────────────────────
-  // When options.probe is true, probe evidence will be collected here and
-  // merged into findings/impact below.
-  //
-  // TODO(probe): import { runProbe } from "./probe";
-  // const probeEvidence: Map<string, Map<number, LockEvidence>> = options.probe
-  //   ? await runProbe(migrations, tableStats)
-  //   : new Map();
+  // When options.probe is true, run the PGlite empirical lock probe and collect
+  // lock evidence for every statement in every migration.
   //
   // probeEvidence is a map of migration.name → (statementIndex → LockEvidence)
-  // Currently not implemented; all evidence is null (static analysis only).
-  const probeEvidence: Map<string, Map<number, LockEvidence>> = new Map();
+  const probeEvidence: Map<string, Map<number, LockEvidence>> = options.probe
+    ? await (await import("./probe")).runProbe(migrations)
+    : new Map();
   // ── END PROBE HOOK ─────────────────────────────────────────────────────────
 
   for (const migration of migrations) {

@@ -144,7 +144,7 @@ describe("LS002 — ADD COLUMN NOT NULL without constant DEFAULT", () => {
     expect(ls002(stmt, makeMigration(), makeCtx())).toBeNull();
   });
 
-  it("fires when a volatile DEFAULT exists (no constant default — that's LS003's domain)", () => {
+  it("does NOT fire when a volatile DEFAULT exists (statement succeeds; hazard is LS003's rewrite)", () => {
     const stmt = makeStmt({
       kind: "ADD_COLUMN",
       table: "orders",
@@ -152,10 +152,8 @@ describe("LS002 — ADD COLUMN NOT NULL without constant DEFAULT", () => {
       sql: "ALTER TABLE orders ADD COLUMN shipped_at timestamptz NOT NULL DEFAULT now()",
       flags: { volatileDefault: true },
     });
-    // volatileDefault but no constantDefault → LS002 should fire
-    const f = ls002(stmt, makeMigration(), makeCtx());
-    expect(f).not.toBeNull();
-    expect(f!.ruleId).toBe("LS002");
+    // Has a DEFAULT (volatile) → statement executes on non-empty tables — LS002 must NOT fire.
+    expect(ls002(stmt, makeMigration(), makeCtx())).toBeNull();
   });
 
   it("does NOT fire on nullable column", () => {
@@ -539,15 +537,17 @@ describe("analyzeRepo — demo-repo acceptance table", () => {
     expect(m.findings.filter((f) => f.ruleId === "LS010")).toHaveLength(1);
   });
 
-  it("003 — LS002 (×2) critical + LS003 high + LS010 medium", async () => {
+  it("003 — LS002 (×1 for tracking_code) critical + LS003 high + LS010 medium", async () => {
     const report = await analyzeRepo(demoDir);
     const m = report.migrations.find((m) => m.name === "003_orders_shipped_at.sql")!;
     const ruleIds = m.findings.map((f) => f.ruleId);
 
-    // Two LS002 findings: shipped_at (volatile default, no constant) and tracking_code (no default)
+    // Only one LS002: tracking_code has no DEFAULT at all.
+    // shipped_at has a volatile DEFAULT (now()) so it succeeds on non-empty tables — no LS002.
     const ls002s = m.findings.filter((f) => f.ruleId === "LS002");
-    expect(ls002s).toHaveLength(2);
-    ls002s.forEach((f) => expect(f.severity).toBe("critical"));
+    expect(ls002s).toHaveLength(1);
+    expect(ls002s[0].severity).toBe("critical");
+    expect(ls002s[0].table).toBe("orders");
 
     // LS003 for the volatile default on shipped_at
     expect(ruleIds).toContain("LS003");

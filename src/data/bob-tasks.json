@@ -1,0 +1,22 @@
+[
+  {
+    "n": 1,
+    "title": "Architecture and type contracts from the spec",
+    "feature": "Agent mode · document understanding",
+    "summary": "Bob read docs/SPEC.md and the whole demo repository, then produced the module architecture, a mermaid data-flow diagram, the TypeScript contracts and a per-migration acceptance table.",
+    "files": ["docs/ARCHITECTURE.md", "src/engine/types.ts"],
+    "outcome": "Accepted. One claim in the acceptance table (LS002 on a NOT NULL column with a volatile default) was rejected in review and corrected.",
+    "bobcoins": 0.541,
+    "screenshot": "teqprotech_task01_architecture_contracts_summary.png"
+  },
+  {
+    "n": 2,
+    "title": "Static engine: splitter, classifier, 12 rules, impact model, 53 tests",
+    "feature": "Agent mode · todo list · test loop",
+    "summary": "Bob implemented the SQL statement splitter (comments, strings, dollar-quoting), the multi-action ALTER TABLE classifier, rules LS001–LS012, the impact estimator and analyzeRepo, then iterated on vitest until green.",
+    "files": ["src/engine/split.ts", "src/engine/classify.ts", "src/engine/rules.ts", "src/engine/impact.ts", "src/engine/analyze.ts", "src/engine/rules.test.ts"],
+    "outcome": "Accepted after independent re-run (53/53 tests, tsc clean). Review found LS002 still over-firing; sent back to Bob in task 3.",
+    "bobcoins": 3.2,
+    "screenshot": "teqprotech_task02_static_engine_rules_tests_summary.png"
+  }
+]

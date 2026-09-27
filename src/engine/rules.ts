@@ -144,8 +144,9 @@ export function ls002(
   const hasNotNull = /\bNOT\s+NULL\b/i.test(stmt.sql);
   if (!hasNotNull) return null;
 
-  // If there is a constant DEFAULT, the statement succeeds — no finding.
-  if (stmt.flags.constantDefault) return null;
+  // If any DEFAULT exists (constant or volatile), the statement can execute on
+  // non-empty tables — no LS002. A volatile DEFAULT is LS003's domain (rewrite).
+  if (stmt.flags.constantDefault || stmt.flags.volatileDefault) return null;
 
   // If table was created in this migration, it's empty — safe.
   if (stmt.table && ctx.tablesCreatedInThisMigration.has(stmt.table.toLowerCase())) return null;
@@ -155,8 +156,8 @@ export function ls002(
     "critical",
     stmt,
     migration,
-    `ADD COLUMN "${stmt.columns[0] ?? ""}" NOT NULL without a constant DEFAULT on table "${stmt.table}"`,
-    "PostgreSQL must verify every existing row satisfies NOT NULL. Without a constant DEFAULT, the statement fails on any non-empty table.",
+    `ADD COLUMN "${stmt.columns[0] ?? ""}" NOT NULL without any DEFAULT on table "${stmt.table}"`,
+    "PostgreSQL must verify every existing row satisfies NOT NULL. Without a DEFAULT, the statement fails immediately on any non-empty table.",
     "Add the column as nullable first, backfill in batches, then add NOT NULL via ADD CONSTRAINT … CHECK NOT VALID + VALIDATE CONSTRAINT."
   );
 }
