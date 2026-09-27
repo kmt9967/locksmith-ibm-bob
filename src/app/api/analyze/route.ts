@@ -45,7 +45,7 @@ export async function POST(req: Request) {
   if (sql.length + baseline.length > MAX_SQL) {
     return NextResponse.json({ error: `SQL too large (max ${MAX_SQL} characters).` }, { status: 413 });
   }
-  let stats: Record<string, { rows: number; writesPerSec: number }> = {};
+  const stats: Record<string, { rows: number; writesPerSec: number }> = {};
   // Guard: typeof array === "object", so exclude arrays explicitly.
   if (body.tableStats && typeof body.tableStats === "object" && !Array.isArray(body.tableStats)) {
     const entries = Object.entries(body.tableStats as Record<string, unknown>)
@@ -69,6 +69,8 @@ export async function POST(req: Request) {
     fs.writeFileSync(path.join(mig, "001_candidate.sql"), sql);
     fs.writeFileSync(path.join(dir, "db", "table-stats.json"), JSON.stringify(stats));
     const report = await analyzeRepo(dir, { probe: true });
+    // Strip server temp paths (they reveal host directory layout).
+    for (const m of report.migrations) m.filePath = `db/migrations/${m.name}`;
     return NextResponse.json(report);
   } catch {
     // Do not echo internal error messages to callers — they can contain

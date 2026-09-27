@@ -9,6 +9,9 @@ const eslintConfig = defineConfig([
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",
+    // Fictional sample apps analysed by LockSmith (fixtures, not product code):
+    "demo-repo/**",
+    "demo-repo-safe/**",
     "out/**",
     "build/**",
     "next-env.d.ts",

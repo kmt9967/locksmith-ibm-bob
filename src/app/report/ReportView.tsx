@@ -10,8 +10,15 @@ const SEV_ORDER: Severity[] = ["critical", "high", "medium", "low"];
 function summarize(data: DemoData) {
   const findings = data.report?.migrations.flatMap((m) => m.findings) ?? [];
   const bySev = Object.fromEntries(SEV_ORDER.map((s) => [s, findings.filter((f) => f.severity === s).length])) as Record<Severity, number>;
-  const worst = findings.reduce((acc, f) => Math.max(acc, f.impact?.estSeconds ?? 0), 0);
-  const blocked = findings.reduce((acc, f) => acc + (f.impact?.blockedWrites ?? 0), 0);
+  // Several rules can flag the same statement; count each statement's impact once.
+  const perStatement = new Map<string, number>();
+  let worst = 0;
+  for (const f of findings) {
+    if (!f.impact?.blocking) continue;
+    worst = Math.max(worst, f.impact.estSeconds);
+    perStatement.set(`${f.migration}#${f.statementIndex}`, f.impact.blockedWrites);
+  }
+  const blocked = [...perStatement.values()].reduce((a, b) => a + b, 0);
   return { findings, bySev, worst, blocked };
 }
 
@@ -79,6 +86,8 @@ export function ReportView({ original, safe }: { original: DemoData; safe: DemoD
             </Stat>
           </div>
 
+          {tab === "safe" && <BobChanges original={original} safe={safe} />}
+
           <div className="mt-8 space-y-4">
             {data.report.migrations.map((m) => (
               <MigrationCard key={m.name} m={m} sql={data.sources[m.name] ?? ""} />
@@ -86,6 +95,47 @@ export function ReportView({ original, safe }: { original: DemoData; safe: DemoD
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+function BobChanges({ original, safe }: { original: DemoData; safe: DemoData }) {
+  const prefix = (n: string) => n.slice(0, 3);
+  const before = Object.keys(original.sources);
+  const after = Object.keys(safe.sources);
+  const rewritten = before
+    .filter((b) => !after.includes(b))
+    .map((b) => ({ from: b, to: after.filter((a) => prefix(a) === prefix(b)) }));
+  const risk = new Map(original.report?.migrations.map((m) => [m.name, m.riskScore]) ?? []);
+  return (
+    <div className="mt-6 rounded-lg border border-accent/30 bg-accent/5 p-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="font-semibold">What IBM Bob changed</h2>
+        <span className="text-xs text-muted">
+          🔒 Migration Surgeon mode · 1 subagent per flagged migration · {rewritten.length} migrations →{" "}
+          {rewritten.reduce((a, r) => a + r.to.length, 0)} files
+        </span>
+      </div>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        {rewritten.map((r) => (
+          <div key={r.from} className="rounded-md border border-border bg-bg p-3 text-xs">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-mono text-critical line-through decoration-critical/60">{r.from}</span>
+              <span className="text-muted">risk {risk.get(r.from) ?? "?"} → 0</span>
+            </div>
+            <ul className="mt-1.5 space-y-0.5">
+              {r.to.map((t) => (
+                <li key={t} className="font-mono text-safe">+ {t}</li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+      <p className="mt-3 text-xs text-muted">
+        App code updated for the rename&apos;s expand phase (dual-write <code>email</code> + <code>email_address</code>). Bob also
+        withdrew its own column-drop step after noticing the app still wrote to that column. Every file below was re-checked
+        by the same engine and lock probe.
+      </p>
     </div>
   );
 }
@@ -119,7 +169,7 @@ function MigrationCard({ m, sql }: { m: MigrationReport; sql: string }) {
         </span>
       </button>
       {open && (
-        <div className="grid gap-4 border-t border-border p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+        <div className="grid grid-cols-1 gap-4 border-t border-border p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
           <pre className="overflow-x-auto rounded-md border border-border bg-bg p-3 text-xs leading-relaxed">
             {sql.split(/\r?\n/).map((line, i) => (
               <div key={i} className={flagged.has(i + 1) ? "-mx-3 border-l-2 border-critical bg-critical/10 px-3" : ""}>

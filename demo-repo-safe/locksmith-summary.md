@@ -134,3 +134,9 @@ Only after confirming all app instances read from `email_address` and no code re
 - **`005c` is intentionally excluded from this release.** The `DROP COLUMN total` + `RENAME COLUMN total_new` contract phase can only run after the application no longer writes to the old `total` column. Running it prematurely with app code still writing `total` would cause runtime errors.
 - **`007c` LS005 residual:** The `ALTER COLUMN status SET NOT NULL` in `007c` is flagged by LockSmith's static probe but is safe in PostgreSQL 12+. The validated `CHECK (status IS NOT NULL)` constraint (added and validated earlier in the same file) tells the optimizer to skip the full scan. The lock is held for microseconds, not seconds.
 - **Retry on lock_timeout:** All DDL files with `SET lock_timeout = '3s'` may abort with `SQLSTATE 55P03 (lock_not_available)` if a long-running query is active. Add retry logic (exponential back-off, up to 3 attempts) in the migration runner or CI pipeline.
+
+---
+
+> **Addendum (operator, after IBM Bob task 6):** the LS005 residual above was a LockSmith false positive. In task 6
+> Bob taught rule LS005 the PostgreSQL 12+ validated-CHECK pattern. Re-running the gate now gives
+> **risk 0 / 100, 0 findings, gate PASS** for this repository (original `demo-repo`: risk 100, 14 findings, FAIL).

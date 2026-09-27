@@ -39,7 +39,7 @@ export default function BobPage() {
         Bob also built most of the engine itself; every session is listed below with its real task summary.
       </p>
 
-      <div className="mt-8 grid gap-4 lg:grid-cols-3">
+      <div className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-3">
         {[
           ["1. Report", "npm run locksmith -- --dir <repo> --json locksmith-report.json produces the findings with measured lock evidence."],
           ["2. Rewrite (Bob)", "In Bob IDE, switch to 🔒 Migration Surgeon and run the lock-audit skill. Bob spawns one subagent per flagged migration and rewrites it into expand → backfill → contract steps."],
@@ -68,11 +68,11 @@ export default function BobPage() {
       <section className="mt-10">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="text-lg font-semibold">Bob task sessions used to build LockSmith</h2>
-          <span className="text-sm text-muted">{list.length} tasks · {total.toFixed(2)} Bobcoins of the 40 provided</span>
+          <span className="text-sm text-muted">{list.length} tasks · {total.toFixed(2)} Bobcoins in these task summaries (account usage 13.07 of 40, incl. one aborted prompt)</span>
         </div>
         <div className="mt-4 space-y-4">
           {list.map((t) => (
-            <div key={t.n} className="grid gap-4 rounded-lg border border-border bg-surface p-4 md:grid-cols-[minmax(0,1fr)_320px]">
+            <div key={t.n} className="grid grid-cols-1 gap-4 rounded-lg border border-border bg-surface p-4 md:grid-cols-[minmax(0,1fr)_320px]">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-mono text-xs text-accent">TASK {String(t.n).padStart(2, "0")}</span>

@@ -59,7 +59,7 @@ export default function AnalyzePage() {
         declare. Nothing is stored.
       </p>
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-2">
+      <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <label className="block">
           <span className="text-xs uppercase tracking-wider text-muted">Existing schema (baseline)</span>
           <textarea

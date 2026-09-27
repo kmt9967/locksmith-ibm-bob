@@ -365,7 +365,7 @@ export async function runProbe(
           const preSnapshot = await snapshotRelfilenodes(pg);
 
           // 2. BEGIN; <stmt>; read locks; ROLLBACK
-          let locks: LocksByRelation = {};
+          const locks: LocksByRelation = {};
           let errorText: string | null = null;
 
           try {

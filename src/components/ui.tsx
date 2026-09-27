@@ -41,7 +41,7 @@ export function LockChip({ relation, mode }: { relation: string; mode: string })
         ? "border-high/40 text-high"
         : "border-safe/40 text-safe";
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded border bg-bg px-2 py-0.5 font-mono text-[11px] ${tone}`}>
+    <span className={`inline-flex max-w-full flex-wrap items-center gap-x-1.5 rounded border bg-bg px-2 py-0.5 font-mono text-[11px] break-all ${tone}`}>
       <span className="text-muted">{relation}</span>
       {mode}
       <span className="text-muted">· blocks {blocks}</span>

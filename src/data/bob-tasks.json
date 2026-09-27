@@ -4,7 +4,10 @@
     "title": "Architecture and type contracts from the spec",
     "feature": "Agent mode · document understanding",
     "summary": "Bob read docs/SPEC.md and the whole demo repository, then produced the module architecture, a mermaid data-flow diagram, the TypeScript contracts and a per-migration acceptance table.",
-    "files": ["docs/ARCHITECTURE.md", "src/engine/types.ts"],
+    "files": [
+      "docs/ARCHITECTURE.md",
+      "src/engine/types.ts"
+    ],
     "outcome": "Accepted. One claim in the acceptance table (LS002 on a NOT NULL column with a volatile default) was rejected in review and corrected.",
     "bobcoins": 0.541,
     "screenshot": "teqprotech_task01_architecture_contracts_summary.png"
@@ -14,9 +17,76 @@
     "title": "Static engine: splitter, classifier, 12 rules, impact model, 53 tests",
     "feature": "Agent mode · todo list · test loop",
     "summary": "Bob implemented the SQL statement splitter (comments, strings, dollar-quoting), the multi-action ALTER TABLE classifier, rules LS001–LS012, the impact estimator and analyzeRepo, then iterated on vitest until green.",
-    "files": ["src/engine/split.ts", "src/engine/classify.ts", "src/engine/rules.ts", "src/engine/impact.ts", "src/engine/analyze.ts", "src/engine/rules.test.ts"],
+    "files": [
+      "src/engine/split.ts",
+      "src/engine/classify.ts",
+      "src/engine/rules.ts",
+      "src/engine/impact.ts",
+      "src/engine/analyze.ts",
+      "src/engine/rules.test.ts"
+    ],
     "outcome": "Accepted after independent re-run (53/53 tests, tsc clean). Review found LS002 still over-firing; sent back to Bob in task 3.",
     "bobcoins": 3.2,
     "screenshot": "teqprotech_task02_static_engine_rules_tests_summary.png"
+  },
+  {
+    "n": 3,
+    "title": "PostgreSQL lock probe in PGlite + fix of a reviewed defect",
+    "feature": "Agent mode · parallel test runs · debugging",
+    "summary": "Bob implemented the empirical probe: replay every statement inside an embedded PostgreSQL, read pg_locks for the backend, detect table rewrites via relfilenode, seed synthetic rows, and handle CONCURRENTLY outside transactions. It also fixed the LS002 over-firing found in review of task 2.",
+    "files": [
+      "src/engine/probe.ts",
+      "src/engine/probe.test.ts",
+      "src/engine/analyze.ts",
+      "src/engine/rules.ts",
+      "src/engine/rules.test.ts"
+    ],
+    "outcome": "Accepted after independent re-run: 58/58 tests, tsc clean; CLI now shows measured locks (e.g. CREATE INDEX → ShareLock; ALTER TYPE → AccessExclusiveLock + rewrite).",
+    "bobcoins": 2.94,
+    "screenshot": "teqprotech_task03_pglite_lock_probe_ls002_fix_summary.png"
+  },
+  {
+    "n": 4,
+    "title": "Migration Surgeon custom mode, lock reference and lock-audit skill",
+    "feature": "Custom mode · mode rules · skill",
+    "summary": "Bob authored .bob/custom_modes.yaml (edit access restricted by fileRegex), a PostgreSQL lock reference it reads at rewrite time, the lock-audit skill checklist and a developer guide. It self-tested the fileRegex and tightened it so the mode cannot edit LockSmith's own engine.",
+    "files": [
+      ".bob/custom_modes.yaml",
+      ".bob/rules-migration-surgeon/01-postgres-locks.md",
+      ".bob/skills/lock-audit/SKILL.md",
+      "docs/BOB_MODE.md"
+    ],
+    "outcome": "Accepted. YAML validated independently; Bob IDE picked the mode up immediately (visible in the mode picker).",
+    "bobcoins": 1.1,
+    "screenshot": "teqprotech_task04_custom_mode_skill_summary.png"
+  },
+  {
+    "n": 5,
+    "title": "Bob rewrites the release: 6 parallel subagents, gate FAIL → PASS",
+    "feature": "Custom mode · skill · 6 parallel subagents",
+    "summary": "In Migration Surgeon mode Bob ran the lock-audit skill on a working copy of the demo repo: it ran the gate, spawned one subagent per flagged migration in parallel, replaced 6 dangerous migrations with 13 ordered safe files, updated app code for dual-writes, re-ran the gate, and withdrew its own column-drop step when it recognised the app still used the column.",
+    "files": [
+      "demo-repo-safe/db/migrations/*",
+      "demo-repo-safe/src/customers.ts",
+      "demo-repo-safe/src/orders.ts",
+      "demo-repo-safe/locksmith-summary.md"
+    ],
+    "outcome": "Accepted after independent gate run: FAIL (risk 100) → PASS (risk 40). The remaining finding was an engine false positive, fixed in task 6.",
+    "bobcoins": 2.21,
+    "screenshot": "teqprotech_task05_migration_surgeon_parallel_subagents_summary.png"
+  },
+  {
+    "n": 6,
+    "title": "Debugging an engine false positive + security review of the public API",
+    "feature": "Agent mode · debugging · review",
+    "summary": "Bob taught LS005 the PostgreSQL 12+ pattern (validated CHECK (col IS NOT NULL) makes SET NOT NULL scan-free) with regression tests, and reviewed /api/analyze, fixing four issues: unbounded body before JSON parse, unbounded tableStats loop, array bypass of the object guard, and internal error leakage.",
+    "files": [
+      "src/engine/rules.ts",
+      "src/engine/rules.test.ts",
+      "src/app/api/analyze/route.ts"
+    ],
+    "outcome": "Accepted after independent re-run: 61/61 tests, tsc clean; Bob-rewritten repo now scores risk 0 with 0 findings, original still FAIL/100.",
+    "bobcoins": 2.59,
+    "screenshot": "teqprotech_task06_debug_false_positive_security_review_summary.png"
   }
 ]

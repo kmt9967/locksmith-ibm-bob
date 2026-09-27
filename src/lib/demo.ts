@@ -24,5 +24,7 @@ export async function loadDemo(variant: Variant): Promise<DemoData> {
     sources[f] = fs.readFileSync(path.join(migDir, f), "utf8");
   }
   const report = await analyzeRepo(dir, { probe: true });
+  // Never ship absolute build-machine paths to the client.
+  for (const m of report.migrations) m.filePath = `${DIRS[variant]}/db/migrations/${m.name}`;
   return { variant, dir: DIRS[variant], report, sources };
 }

@@ -2,13 +2,13 @@
   "migrations": [
     {
       "name": "001_baseline.sql",
-      "filePath": "F:\\Hackathon\\ibm-bob-2-hackathon\\demo-repo-safe\\db\\migrations\\001_baseline.sql",
+      "filePath": "demo-repo/db/migrations/001_baseline.sql",
       "findings": [],
       "riskScore": 0
     },
     {
       "name": "002_orders_customer_index.sql",
-      "filePath": "F:\\Hackathon\\ibm-bob-2-hackathon\\demo-repo-safe\\db\\migrations\\002_orders_customer_index.sql",
+      "filePath": "demo-repo/db/migrations/002_orders_customer_index.sql",
       "findings": [
         {
           "ruleId": "LS001",
@@ -65,7 +65,7 @@
     },
     {
       "name": "003_orders_shipped_at.sql",
-      "filePath": "F:\\Hackathon\\ibm-bob-2-hackathon\\demo-repo-safe\\db\\migrations\\003_orders_shipped_at.sql",
+      "filePath": "demo-repo/db/migrations/003_orders_shipped_at.sql",
       "findings": [
         {
           "ruleId": "LS003",
@@ -142,7 +142,7 @@
     },
     {
       "name": "004_rename_customer_email.sql",
-      "filePath": "F:\\Hackathon\\ibm-bob-2-hackathon\\demo-repo-safe\\db\\migrations\\004_rename_customer_email.sql",
+      "filePath": "demo-repo/db/migrations/004_rename_customer_email.sql",
       "findings": [
         {
           "ruleId": "LS008",
@@ -152,7 +152,7 @@
           "line": 2,
           "table": "customers",
           "message": "RENAME column \"email\" while application code still references it (3 reference(s))",
-          "why": "Application code references \"email\" in demo-repo-safe\\src\\customers.ts:5, demo-repo-safe\\src\\customers.ts:5, demo-repo-safe\\src\\customers.ts:13. After renaming, these queries will fail.",
+          "why": "Application code references \"email\" in demo-repo\\src\\customers.ts:5, demo-repo\\src\\customers.ts:5, demo-repo\\src\\customers.ts:13. After renaming, these queries will fail.",
           "safePattern": "Expand/contract: add a new column/alias, update all code to use the new name, deploy, then drop the old column in a later migration.",
           "evidence": {
             "locks": {
@@ -197,7 +197,7 @@
     },
     {
       "name": "005_orders_total_precision.sql",
-      "filePath": "F:\\Hackathon\\ibm-bob-2-hackathon\\demo-repo-safe\\db\\migrations\\005_orders_total_precision.sql",
+      "filePath": "demo-repo/db/migrations/005_orders_total_precision.sql",
       "findings": [
         {
           "ruleId": "LS004",
@@ -256,7 +256,7 @@
     },
     {
       "name": "006_order_items_fk.sql",
-      "filePath": "F:\\Hackathon\\ibm-bob-2-hackathon\\demo-repo-safe\\db\\migrations\\006_order_items_fk.sql",
+      "filePath": "demo-repo/db/migrations/006_order_items_fk.sql",
       "findings": [
         {
           "ruleId": "LS006",
@@ -319,7 +319,7 @@
     },
     {
       "name": "007_backfill_status.sql",
-      "filePath": "F:\\Hackathon\\ibm-bob-2-hackathon\\demo-repo-safe\\db\\migrations\\007_backfill_status.sql",
+      "filePath": "demo-repo/db/migrations/007_backfill_status.sql",
       "findings": [
         {
           "ruleId": "LS012",
@@ -400,12 +400,12 @@
     },
     {
       "name": "008_products_title_search.sql",
-      "filePath": "F:\\Hackathon\\ibm-bob-2-hackathon\\demo-repo-safe\\db\\migrations\\008_products_title_search.sql",
+      "filePath": "demo-repo/db/migrations/008_products_title_search.sql",
       "findings": [],
       "riskScore": 0
     }
   ],
   "riskScore": 100,
   "gate": "fail",
-  "generatedAt": "2026-09-27T04:40:29.085Z"
+  "generatedAt": "2026-09-27T05:04:37.853Z"
 }
