@@ -45,6 +45,7 @@ function makeCtx(overrides: Partial<RuleContext> = {}): RuleContext {
     tablesCreatedEarlier: new Set(),
     tablesCreatedInThisMigration: new Set(),
     codeIndex: new Map(),
+    validatedNotNullChecks: new Set(),
     ...overrides,
   };
 }
@@ -249,6 +250,33 @@ describe("LS005 — ALTER COLUMN SET NOT NULL", () => {
 
   it("does not fire on ADD_COLUMN", () => {
     expect(ls005(makeStmt({ kind: "ADD_COLUMN" }), makeMigration(), makeCtx())).toBeNull();
+  });
+
+  it("does not fire when a validated CHECK (col IS NOT NULL) exists (PG12+ safe pattern)", () => {
+    // Simulate: earlier migration added CHECK (status IS NOT NULL) and it was validated.
+    const stmt = makeStmt({ kind: "SET_NOT_NULL", table: "orders", columns: ["status"] });
+    const ctx = makeCtx({ validatedNotNullChecks: new Set(["orders.status"]) });
+    const f = ls005(stmt, makeMigration(), ctx);
+    expect(f).toBeNull();
+  });
+
+  it("still fires when a NOT VALID CHECK exists but VALIDATE CONSTRAINT has not run yet", () => {
+    // pendingNotValidChecks would have the constraint but validatedNotNullChecks would not.
+    const stmt = makeStmt({ kind: "SET_NOT_NULL", table: "orders", columns: ["status"] });
+    // validatedNotNullChecks is empty — VALIDATE CONSTRAINT not yet executed
+    const ctx = makeCtx({ validatedNotNullChecks: new Set() });
+    const f = ls005(stmt, makeMigration(), ctx);
+    expect(f).not.toBeNull();
+    expect(f!.ruleId).toBe("LS005");
+  });
+
+  it("does not fire on demo-repo-safe 007c (validated check via VALIDATE CONSTRAINT in earlier statements)", async () => {
+    const demoSafeDir = path.resolve(__dirname, "../../demo-repo-safe");
+    const report = await analyzeRepo(demoSafeDir);
+    const m007c = report.migrations.find((m) => m.name === "007c_backfill_status_validate.sql")!;
+    expect(m007c).toBeDefined();
+    const ls005Findings = m007c.findings.filter((f) => f.ruleId === "LS005");
+    expect(ls005Findings).toHaveLength(0);
   });
 });
 

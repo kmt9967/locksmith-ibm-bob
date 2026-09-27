@@ -8,6 +8,11 @@ export const runtime = "nodejs";
 export const maxDuration = 30;
 
 const MAX_SQL = 20_000;
+// Maximum raw request body size in bytes (~40 KB; well above MAX_SQL but prevents
+// unbounded reads before we can check sql/baseline lengths).
+const MAX_BODY_BYTES = 40_000;
+// Maximum number of tableStats entries accepted from a single request.
+const MAX_TABLE_STATS_ENTRIES = 50;
 
 interface Body {
   sql?: unknown;
@@ -21,6 +26,13 @@ interface Body {
  * The input is written to an isolated temp directory as a two-migration repo; nothing is persisted.
  */
 export async function POST(req: Request) {
+  // Reject oversized bodies before attempting JSON parse to prevent
+  // memory exhaustion from multi-megabyte payloads.
+  const contentLength = Number(req.headers.get("content-length") ?? NaN);
+  if (Number.isFinite(contentLength) && contentLength > MAX_BODY_BYTES) {
+    return NextResponse.json({ error: `Request body too large (max ${MAX_BODY_BYTES} bytes).` }, { status: 413 });
+  }
+
   let body: Body;
   try {
     body = (await req.json()) as Body;
@@ -34,8 +46,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: `SQL too large (max ${MAX_SQL} characters).` }, { status: 413 });
   }
   let stats: Record<string, { rows: number; writesPerSec: number }> = {};
-  if (body.tableStats && typeof body.tableStats === "object") {
-    for (const [k, v] of Object.entries(body.tableStats as Record<string, unknown>)) {
+  // Guard: typeof array === "object", so exclude arrays explicitly.
+  if (body.tableStats && typeof body.tableStats === "object" && !Array.isArray(body.tableStats)) {
+    const entries = Object.entries(body.tableStats as Record<string, unknown>)
+      .slice(0, MAX_TABLE_STATS_ENTRIES);
+    for (const [k, v] of entries) {
       const o = v as { rows?: unknown; writesPerSec?: unknown };
       const rows = Number(o?.rows);
       const wps = Number(o?.writesPerSec ?? 0);
@@ -55,8 +70,10 @@ export async function POST(req: Request) {
     fs.writeFileSync(path.join(dir, "db", "table-stats.json"), JSON.stringify(stats));
     const report = await analyzeRepo(dir, { probe: true });
     return NextResponse.json(report);
-  } catch (e) {
-    return NextResponse.json({ error: `Analysis failed: ${(e as Error).message}` }, { status: 500 });
+  } catch {
+    // Do not echo internal error messages to callers — they can contain
+    // filesystem paths and PGlite internals.
+    return NextResponse.json({ error: "Analysis failed. Check your SQL syntax and try again." }, { status: 500 });
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

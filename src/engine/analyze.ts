@@ -182,6 +182,80 @@ function deduplicateLS010(findings: Finding[]): Finding[] {
   });
 }
 
+// ─── Validated IS NOT NULL check tracker ─────────────────────────────────────
+
+/**
+ * Try to extract the constraint name and target (table, column) from an
+ * ADD CONSTRAINT … CHECK (col IS NOT NULL) statement (with or without NOT VALID).
+ *
+ * Returns null if the statement does not match that pattern.
+ */
+function parseNotNullCheck(
+  stmt: Statement
+): { name: string; tableCol: string } | null {
+  if (stmt.kind !== "ADD_CONSTRAINT") return null;
+  // Normalise: collapse whitespace, strip comments (already done by classifyAll,
+  // but the raw sql field is untouched — strip inline anyway).
+  const n = stmt.sql.replace(/--[^\n]*/g, " ").replace(/\s+/g, " ").trim();
+  // Match: ADD CONSTRAINT <name> CHECK (<col> IS NOT NULL) [NOT VALID]
+  const m = n.match(
+    /ADD\s+CONSTRAINT\s+(\S+)\s+CHECK\s*\(\s*(\w+)\s+IS\s+NOT\s+NULL\s*\)/i
+  );
+  if (!m) return null;
+  const constraintName = m[1].toLowerCase();
+  const col = m[2].toLowerCase();
+  const table = (stmt.table ?? "").toLowerCase();
+  if (!table || !col) return null;
+  return { name: constraintName, tableCol: `${table}.${col}` };
+}
+
+/**
+ * Try to extract the constraint name from a VALIDATE CONSTRAINT statement.
+ * These are classified as OTHER, so we match the raw SQL.
+ */
+function parseValidateConstraint(stmt: Statement): string | null {
+  if (stmt.kind !== "OTHER") return null;
+  const n = stmt.sql.replace(/--[^\n]*/g, " ").replace(/\s+/g, " ").trim();
+  const m = n.match(/VALIDATE\s+CONSTRAINT\s+(\S+)/i);
+  return m ? m[1].replace(/;$/, "").toLowerCase() : null;
+}
+
+/**
+ * Update `validatedNotNullChecks` and `pendingNotValidChecks` in-place for
+ * a single statement, before that statement's rules are evaluated.
+ *
+ * - ADD CONSTRAINT … CHECK (col IS NOT NULL) without NOT VALID
+ *     → immediately add "table.col" to validatedNotNullChecks
+ * - ADD CONSTRAINT … CHECK (col IS NOT NULL) NOT VALID
+ *     → park constraint name in pendingNotValidChecks
+ * - VALIDATE CONSTRAINT <name>
+ *     → if name is in pendingNotValidChecks, promote to validatedNotNullChecks
+ */
+function updateNotNullCheckSets(
+  stmt: Statement,
+  pendingNotValidChecks: Map<string, string>, // constraintName → "table.col"
+  validatedNotNullChecks: Set<string>
+): void {
+  const parsed = parseNotNullCheck(stmt);
+  if (parsed) {
+    if (stmt.flags.notValid) {
+      pendingNotValidChecks.set(parsed.name, parsed.tableCol);
+    } else {
+      validatedNotNullChecks.add(parsed.tableCol);
+    }
+    return;
+  }
+
+  const constraintName = parseValidateConstraint(stmt);
+  if (constraintName) {
+    const tableCol = pendingNotValidChecks.get(constraintName);
+    if (tableCol) {
+      validatedNotNullChecks.add(tableCol);
+      pendingNotValidChecks.delete(constraintName);
+    }
+  }
+}
+
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 /**
@@ -207,6 +281,14 @@ export async function analyzeRepo(
   // Track tables created in earlier migrations (for rule context)
   const tablesCreatedEarlier = new Set<string>();
 
+  // Cross-migration validated IS NOT NULL check tracker.
+  // pendingNotValidChecks: constraintName → "table.col" for ADD CONSTRAINT NOT VALID checks
+  //   that have not yet been VALIDATE CONSTRAINT'd.
+  // validatedNotNullChecksBase: "table.col" entries that are fully validated by end of
+  //   earlier migrations — used as the starting point for each new migration.
+  const pendingNotValidChecksBase = new Map<string, string>();
+  const validatedNotNullChecksBase = new Set<string>();
+
   const migrationReports: MigrationReport[] = [];
 
   // ── PROBE HOOK ─────────────────────────────────────────────────────────────
@@ -228,11 +310,18 @@ export async function analyzeRepo(
       }
     }
 
+    // Per-migration copies of the IS NOT NULL check tracker.
+    // We mutate these as statements are processed so that validatedNotNullChecks
+    // is always current up to (but not including) the statement being evaluated.
+    const pendingNotValidChecks = new Map(pendingNotValidChecksBase);
+    const validatedNotNullChecks = new Set(validatedNotNullChecksBase);
+
     const ctx: RuleContext = {
       tableStats,
       tablesCreatedEarlier: new Set(tablesCreatedEarlier),
       tablesCreatedInThisMigration,
       codeIndex,
+      validatedNotNullChecks,
     };
 
     const migrationProbeEvidence =
@@ -241,6 +330,10 @@ export async function analyzeRepo(
     let findings: Finding[] = [];
 
     for (const stmt of migration.statements) {
+      // Update the validated check sets BEFORE evaluating rules for this statement,
+      // so that rules see the state as it was immediately before this statement runs.
+      updateNotNullCheckSets(stmt, pendingNotValidChecks, validatedNotNullChecks);
+
       const stmtFindings = runRules(stmt, migration, ctx);
 
       // Enrich with impact data
@@ -270,6 +363,15 @@ export async function analyzeRepo(
       findings,
       riskScore: score,
     });
+
+    // After processing this migration, propagate the IS NOT NULL check state
+    // to the base trackers for subsequent migrations.
+    for (const [k, v] of pendingNotValidChecks) {
+      pendingNotValidChecksBase.set(k, v);
+    }
+    for (const entry of validatedNotNullChecks) {
+      validatedNotNullChecksBase.add(entry);
+    }
 
     // After processing this migration, add its created tables to the "earlier" set
     // for subsequent migrations.

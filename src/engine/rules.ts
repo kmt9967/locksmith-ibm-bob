@@ -50,6 +50,15 @@ export interface RuleContext {
   tablesCreatedInThisMigration: Set<string>;
   /** Code index built from app source. */
   codeIndex: CodeIndex;
+  /**
+   * Set of "table.column" keys (both lower-cased) for which a validated
+   * CHECK (col IS NOT NULL) constraint exists — either added without NOT VALID,
+   * or added NOT VALID and later VALIDATE CONSTRAINT'd before this statement.
+   *
+   * When this set contains the key for a SET NOT NULL target, PostgreSQL 12+
+   * skips the full-table scan, so LS005 must not fire.
+   */
+  validatedNotNullChecks: Set<string>;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -224,6 +233,16 @@ export function ls005(
   ctx: RuleContext
 ): Finding | null {
   if (stmt.kind !== "SET_NOT_NULL") return null;
+
+  // PG12+: SET NOT NULL is instant (no full-table scan) when a validated
+  // CHECK (col IS NOT NULL) constraint already exists on the table.
+  // The check must have been added without NOT VALID, or validated via
+  // VALIDATE CONSTRAINT before this statement runs.
+  const col = (stmt.columns[0] ?? "").toLowerCase();
+  const table = (stmt.table ?? "").toLowerCase();
+  if (col && table && ctx.validatedNotNullChecks.has(`${table}.${col}`)) {
+    return null;
+  }
 
   return makeFinding(
     "LS005",
