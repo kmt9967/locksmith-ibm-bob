@@ -9,6 +9,8 @@ custom Bob mode and skill shipped in this repo — to **rewrite** each dangerous
 expand → backfill → contract sequence, then **re-verifies** Bob's rewrite with the same gate.
 
 - Live demo: **https://locksmith-ibm-bob.vercel.app**
+- Hackathon submission (lablab.ai): https://lablab.ai/ai-hackathons/ibm-bob-2-hackathon/teqprotech/locksmith-ibm-bob-fixes-locking-db-migrations
+- Portfolio case study: https://talalkhawaja.com/projects/locksmith
 - Demo video: MP4 (2:27) attached to the lablab.ai submission · script in [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md)
 - IBM Bob task session screenshots: [`bob_sessions/`](bob_sessions/)
 
